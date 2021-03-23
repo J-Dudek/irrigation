@@ -35,23 +35,24 @@ public class DripIrrigation {
     }
 
     public Flux<DetailedDrop> followDetailedDropper(int greenHouseId, int rowId, int dropperId) {
-        //TODO use the GreenHouseProducer.getDrops() function as producer, but filter the output to fit the given criteria
-        //TODO    then map it to a DetailedDrop using the getDetailedDrop() function
-    /**
-        Drop drop = Drop.builder().dropperId(dropperId).rowId(rowId).greenHouseId(greenHouseId).instant(Instant.now()).build();
-        GreenHouseProducer.getDrops().map()
-        Flux<DetailedDrop> detailedDropFlux =
-                Flux.interval(Duration.ofMillis(20))
-                        .map(d-> DetailedDrop.builder().greenHouse(GreenHouse.builder().id(greenHouseId)..build())
-                                .instant(Instant.now())
-                                .build());
-     **/
-        return null;
+        /*
+         use the GreenHouseProducer.getDrops() function as producer, but filter the output to fit the given criteria
+            then map it to a DetailedDrop using the getDetailedDrop() function
+        */
+        return GreenHouseProducer.getDrops().flatMap(this::getDetailedDrop);
+
+
     }
 
     private Mono<DetailedDrop> getDetailedDrop(Drop drop) {
-        //TODO use the GreenHouseProducer.getDropper() function to find the Dropper information wrap in a Greenhouse
-        //TODO    then map it to build a DetailedDrop
-        return null;
+        /*
+         use the GreenHouseProducer.getDropper() function to find the Dropper information wrap in a Greenhouse
+            then map it to build a DetailedDrop
+         */
+        return GreenHouseProducer.getDropper(drop.getGreenHouseId(), drop.getRowId(), drop.getDropperId())
+                .map(greenHouse1 -> DetailedDrop.builder().build());
+
+
+
     }
 }
