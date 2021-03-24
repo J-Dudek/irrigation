@@ -39,7 +39,8 @@ public class DripIrrigation {
          use the GreenHouseProducer.getDrops() function as producer, but filter the output to fit the given criteria
             then map it to a DetailedDrop using the getDetailedDrop() function
         */
-        return GreenHouseProducer.getDrops().flatMap(this::getDetailedDrop);
+
+        return GreenHouseProducer.getDrops().flatMap(drop -> getDetailedDrop(drop));
 
 
     }
@@ -50,7 +51,7 @@ public class DripIrrigation {
             then map it to build a DetailedDrop
          */
         return GreenHouseProducer.getDropper(drop.getGreenHouseId(), drop.getRowId(), drop.getDropperId())
-                .map(greenHouse1 -> DetailedDrop.builder().build());
+                .map(greenHouse1 -> DetailedDrop.builder().instant(Instant.now()).greenHouse(greenHouse1).build());
 
 
 
