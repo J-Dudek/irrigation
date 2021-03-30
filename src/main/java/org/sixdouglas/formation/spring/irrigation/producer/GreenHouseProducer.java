@@ -1,6 +1,9 @@
 package org.sixdouglas.formation.spring.irrigation.producer;
 
-import org.sixdouglas.formation.spring.irrigation.*;
+import org.sixdouglas.formation.spring.irrigation.Drop;
+import org.sixdouglas.formation.spring.irrigation.Dropper;
+import org.sixdouglas.formation.spring.irrigation.GreenHouse;
+import org.sixdouglas.formation.spring.irrigation.Row;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -10,8 +13,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
-import java.util.stream.Stream;
 
 public final class GreenHouseProducer {
     private static Logger LOGGER = LoggerFactory.getLogger(GreenHouseProducer.class);
@@ -86,17 +87,14 @@ public final class GreenHouseProducer {
          **/
         Flux<Drop> dropsFlux = Flux.empty();
         // recuper les drops qui sortent des droppers qui sortent des row qui sortent des greenHouse
-        Flux<Drop> dropFlux = Flux.fromIterable(greenHouses)
-                .map(greenHouse -> greenHouse.getRows())
-                .map(rows -> Row.builder().build())
-                .map(row -> row.getDroppers())
-                .map(droppers -> Dropper.builder().build())
-                .interval(Duration.ofMillis(10))
-                .map(d-> Drop.builder().greenHouseId(1)
-                        .rowId(1).dropperId(1)
-                        .instant(Instant.now())
-                        .build());
-        dropsFlux.mergeWith(dropFlux);
+        for (GreenHouse gh: greenHouses) {
+            for (Row r: gh.getRows()) {
+                for (Dropper d: r.getDroppers()) {
+                    Flux<Drop> newFlux = Flux.interval(Duration.ofMillis(10)).flatMap(aLong -> buildDrop(gh, r, d));
+                    dropsFlux = Flux.merge(dropsFlux, newFlux);
+                }
+            }
+        }
         return dropsFlux;
     }
 
@@ -139,14 +137,22 @@ public final class GreenHouseProducer {
          Build a new Greenhouse that will contain a newly built Row that will contain a newly built Dropper
             using the data of the given objects
          */
-        return Mono.just(GreenHouse.builder()
+        return Mono.just(GreenHouse
+                .builder()
                 .id(house.getId())
                 .name(house.getName())
-                .row(Row.builder()
+                .row(Row
+                        .builder()
                         .id(row.getId())
                         .name(row.getName())
-                        .dropper(Dropper.builder().id(dropper.getId()).name(dropper.getName()).build())
-                        .build()).build());
+                        .dropper(Dropper
+                                .builder()
+                                .id(dropper.getId())
+                                .name(dropper.getName())
+                                .broken(dropper.isBroken())
+                                .build())
+                        .build())
+                .build());
 
     }
 }
