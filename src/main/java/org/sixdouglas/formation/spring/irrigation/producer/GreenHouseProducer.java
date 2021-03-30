@@ -4,6 +4,8 @@ import org.sixdouglas.formation.spring.irrigation.Drop;
 import org.sixdouglas.formation.spring.irrigation.Dropper;
 import org.sixdouglas.formation.spring.irrigation.GreenHouse;
 import org.sixdouglas.formation.spring.irrigation.Row;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -11,9 +13,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 public final class GreenHouseProducer {
+    private static Logger LOGGER = LoggerFactory.getLogger(GreenHouseProducer.class);
     private static final List<GreenHouse> greenHouses = List.of(GreenHouse.builder()
                 .id(1)
                 .name("In-House plants")
@@ -76,14 +78,23 @@ public final class GreenHouseProducer {
 
 
     public static Flux<Drop> getDrops() {
+        /**
+          go through all Greenhouses
+           go through all Row
+               go through all Dropper
+                  Create a flux that will emit a Drop every 10 millis seconds using the buildDrop() function
+                  then merge this new flux int the dropsFlux
+         **/
         Flux<Drop> dropsFlux = Flux.empty();
-
-        //TODO go through all Greenhouses
-        //TODO    go through all Row
-        //TODO       go through all Dropper
-        //TODO          Create a flux that will emit a Drop every 10 millis seconds using the buildDrop() function
-        //TODO          then merge this new flux int the dropsFlux
-
+        // recuper les drops qui sortent des droppers qui sortent des row qui sortent des greenHouse
+        for (GreenHouse gh: greenHouses) {
+            for (Row r: gh.getRows()) {
+                for (Dropper d: r.getDroppers()) {
+                    Flux<Drop> newFlux = Flux.interval(Duration.ofMillis(10)).flatMap(aLong -> buildDrop(gh, r, d));
+                    dropsFlux = Flux.merge(dropsFlux, newFlux);
+                }
+            }
+        }
         return dropsFlux;
     }
 
@@ -120,13 +131,30 @@ public final class GreenHouseProducer {
         if(dropperOptional.isEmpty()){
             return Mono.empty();
         }
-
         return getJust(greenHouse, row, dropperOptional.get());
     }
 
     private static Mono<GreenHouse> getJust(GreenHouse house, Row row, Dropper dropper) {
-        //TODO Build a new Greenhouse that will contain a newly built Row that will contain a newly built Dropper
-        //TODO    using the data of the given objects
-        return Mono.empty();
+        /*
+         Build a new Greenhouse that will contain a newly built Row that will contain a newly built Dropper
+            using the data of the given objects
+         */
+        return Mono.just(GreenHouse
+                .builder()
+                .id(house.getId())
+                .name(house.getName())
+                .row(Row
+                        .builder()
+                        .id(row.getId())
+                        .name(row.getName())
+                        .dropper(Dropper
+                                .builder()
+                                .id(dropper.getId())
+                                .name(dropper.getName())
+                                .broken(dropper.isBroken())
+                                .build())
+                        .build())
+                .build());
+
     }
 }
